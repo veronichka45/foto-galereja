@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📸 Моя фотогалерея</title>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Merriweather', serif;
+      background-color: #d8cfc4;
+      color: #3a2e2a;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin: 25px 0;
+      text-align: center;
+    }
+
+    #gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+      width: 90%;
+      max-width: 900px;
+      margin: 100px 0 80px;
+    }
+
+    .image-container {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      background: #fff;
+      transition: transform 0.3s;
+    }
+
+    .image-container img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      cursor: pointer;
+    }
+
+    .image-container:hover {
+      transform: scale(1.03);
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: rgba(0,0,0,0.6);
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px 6px;
+    }
+
+    .desc {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      font-size: 13px;
+      padding: 6px;
+      display: none;
+      border-radius: 0 0 12px 12px;
+    }
+
+    .image-container:hover .desc {
+      display: block;
+    }
+
+    #preview img {
+      width: 200px;
+      margin-top: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      display: flex;
+      gap: 12px;
+      background: #b7a899;
+      padding: 12px 20px;
+      border-radius: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      background-color: #3a2e2a;
+      color: #f7f3ef;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Merriweather', serif;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #5a4c43;
+    }
+
+    input[type="file"],
+    input[type="text"] {
+      background: #f4efea;
+      border: 1px solid #8d8178;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-family: 'Merriweather', serif;
+      color: #3a2e2a;
+    }
+
+    /* Модальне вікно */
+    #modal {
+      display: none;
+      position: fixed;
+      z-index: 10;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    #modal img {
+      max-width: 80%;
+      max-height: 80%;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    #modalDesc {
+      color: #f7f3ef;
+      margin-top: 15px;
+      font-style: italic;
+      font-size: 18px;
+    }
+
+    #closeModal {
+      position: absolute;
+      top: 25px;
+      right: 40px;
+      font-size: 32px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.6);
+      color: white;
+      border: none;
+      font-size: 28px;
+      padding: 8px 12px;
+      cursor: pointer;
+      border-radius: 6px;
+      user-select: none;
+    }
+
+    #prevBtn { left: 20px; }
+    #nextBtn { right: 20px; }
+
+    @media (max-width: 700px) {
+      .controls {
+        flex-direction: column;
+        position: static;
+        margin-top: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>📸 Моя фотогалерея</h1>
+
+  <div id="preview"></div>
+
+  <div id="gallery"></div>
+
+  <div class="controls">
+    <input type="file" id="uploadInput" accept="image/*">
+    <input type="text" id="imageDesc" placeholder="Введіть опис зображення">
+    <button id="addImageBtn">Додати</button>
+    <button id="sortBtn">Сортувати A–Я</button>
+    <button id="clearBtn">Очистити</button>
+  </div>
+
+  <!-- Модальне вікно -->
+  <div id="modal">
+    <span id="closeModal">&times;</span>
+    <button id="prevBtn" class="nav-btn">&#10094;</button>
+    <img id="modalImg" src="">
+    <button id="nextBtn" class="nav-btn">&#10095;</button>
+    <div id="modalDesc"></div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      const gallery = $('#gallery');
+      const modal = $('#modal');
+      const modalImg = $('#modalImg');
+      const modalDesc = $('#modalDesc');
+      const closeModal = $('#closeModal');
+      const prevBtn = $('#prevBtn');
+      const nextBtn = $('#nextBtn');
+
+      let images = JSON.parse(localStorage.getItem('galleryImages')) || [];
+      let currentIndex = 0;
+
+      function renderGallery() {
+        gallery.empty();
+        images.forEach((img, i) => {
+          const imgDiv = $(`
+            <div class="image-container" data-index="${i}">
+              <img src="${img.url}" alt="image">
+              <div class="desc">${img.desc}</div>
+              <button class="delete-btn">🗑️</button>
+            </div>
+          `);
+          gallery.append(imgDiv);
+        });
+      }
+
+      gallery.on('click', '.delete-btn', function (e) {
+        e.stopPropagation();
+        const index = $(this).parent().data('index');
+        images.splice(index, 1);
+        localStorage.setItem('galleryImages', JSON.stringify(images));
+        renderGallery();
+      });
+
+      $('#uploadInput').on('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { alert('Будь ласка, виберіть зображення!'); return; }
+        const reader = new FileReader();
+        reader.onload = function (event) { $('#preview').html(`<img src="${event.target.result}" alt="preview">`); };
+        reader.readAsDataURL(file);
+      });
+
+      $('#addImageBtn').on('click', function () {
+        const fileInput = $('#uploadInput')[0];
+        const desc = $('#imageDesc').val();
+        if (!fileInput.files.length) { alert('Оберіть зображення!'); return; }
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          images.push({ url: event.target.result, desc });
+          localStorage.setItem('galleryImages', JSON.stringify(images));
+          renderGallery();
+          $('#preview').empty();
+          $('#imageDesc').val('');
+          fileInput.value = '';
+        };
+        reader.readAsDataURL(file);
+      });
+
+      $('#sortBtn').on('click', function () {
+        images.sort((a,b) => a.desc.localeCompare(b.desc));
+        localStorage.setItem('galleryImages', JSON.stringify(images));
+        renderGallery();
+      });
+
+      $('#clearBtn').on('click', function () {
+        if(confirm('Очистити всю галерею?')) {
+          images = [];
+          localStorage.removeItem('galleryImages');
+          renderGallery();
+        }
+      });
+
+      gallery.on('click', '.image-container img', function () {
+        currentIndex = $(this).parent().data('index');
+        showModal();
+      });
+
+      function showModal() {
+        const img = images[currentIndex];
+        if (!img) return;
+        modalImg.attr('src', img.url);
+        modalDesc.text(img.desc);
+        modal.css('display', 'flex');
+      }
+
+      prevBtn.on('click', function(e) {
+        e.stopPropagation();
+        currentIndex = (currentIndex - 1 + images.length) % images.length;
+        showModal();
+      });
+
+      nextBtn.on('click', function(e) {
+        e.stopPropagation();
+        currentIndex = (currentIndex + 1) % images.length;
+        showModal();
+      });
+
+      closeModal.on('click', () => modal.hide());
+      $(window).on('click', (e) => { if(e.target === modal[0]) modal.hide(); });
+
+      renderGallery();
+    });
+  </script>
+</body>
+</html>
